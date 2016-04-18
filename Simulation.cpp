@@ -70,9 +70,10 @@ void Simulation::print_pos(){
 // Integrator implementation
 //==================================================================//
 
-// Constructor needs an matrix to hold the forces
+// Constructor needs a matrix to hold the forces and a second one for accelerations
 VelocityVerletIntegrator::VelocityVerletIntegrator(Simulation& sim) : sim_(sim){
     forces.resize(sim_.nAtoms(), 3);
+    accel.resize(sim_.nAtoms(), 3);
 }
 
 
@@ -97,7 +98,7 @@ void VelocityVerletIntegrator::Forces(){
             // Distances
             dx = sim_.pos_(i,0) - sim_.pos_(j,0);
             dy = sim_.pos_(i,1) - sim_.pos_(j,1);
-            dx = sim_.pos_(i,0) - sim_.pos_(j,0);
+            dz = sim_.pos_(i,2) - sim_.pos_(j,2);
 
             // Minimum image criterion
             if (std::abs(dx) > 0.5*dim) dx -= (dx < 0 ? dim*-1 : dim);
@@ -130,4 +131,18 @@ void VelocityVerletIntegrator::Forces(){
     // Normalize E_pot and virial
     E_pot /= nAtoms;
     virial /= nAtoms;
-} // Forces3
+} // Forces
+
+
+void VelocityVerletIntegrator::WrapPos(){
+    int nAtoms = sim_.nAtoms();
+    double dim = sim_.dim();
+    // Loop over the positions of all atoms
+    for (int i = 0; i < nAtoms; i++){
+        // Loop over x, y, and z directions
+        for (int j = 0; j < 3; j++) {
+            if (sim_.pos_(i, j) < dim) sim_.pos_(i, j) += dim;
+            else if (sim_.pos_(i, j) > dim) sim_.pos_(i, j) -= dim;
+        }
+    }
+}

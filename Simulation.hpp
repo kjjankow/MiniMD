@@ -55,7 +55,9 @@ public:
 class VelocityVerletIntegrator {
 private:
     Eigen::Matrix<double, Eigen::Dynamic, 3> forces;
+    Eigen::Matrix<double, Eigen::Dynamic, 3> accel;
     Simulation& sim_;
+    int nAtoms = 0;
     double E_pot = 0;
     double virial = 0;
 
@@ -64,7 +66,21 @@ public:
     VelocityVerletIntegrator(Simulation& sim);
 
     // Propagation functions
+
+    /*
+     * Calculates the forces due to Lenanrd-Jones (LJ) interactions between
+     * all atom pairs from the simulation pointed at in the integrator. Sigma is an experimentally
+     * determined scaling parameter which describes the equilibrium separation distance between two
+     * atoms. Eps is an experimentally determined scaling parameter which gives the energy of this
+     * interaction at at distance of sigma. Uses the standard minimum image convention.
+     */
     void Forces();
+
+    /*
+     * Wraps the position of any atom that leaves the simulation box back into the opposite side
+     * to enforce periodic boundary conditions.
+     */
+    void WrapPos();
 
 };
 
