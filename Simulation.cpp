@@ -16,7 +16,6 @@ Simulation::Simulation(unsigned nAtoms, double temp, unsigned runTime) :
 
     // Populate the position matrix with an x, y, and z for each atom
     // by evenly spacing them throughout the cubic box
-    // We'll assume a box that is 30 A on a side for now
     int n = (int) (ceil(cbrt(nAtoms_)) + 2);
     double spacing = xVec_[0]/(double (n) - 1.0);
     double xpos = 0.0, ypos = 0.0, zpos = 0.0;
@@ -50,6 +49,8 @@ Simulation::Simulation(unsigned nAtoms, double temp, unsigned runTime) :
         vel_(i, 1) = normal(generator);
         vel_(i, 2) = normal(generator);
     }
+
+    density_ = nAtoms_/volume_;
 } // Constructor
 
 
@@ -66,6 +67,22 @@ void Simulation::print_pos(){
     writefile.close();
 }
 
+
+void Simulation::print_stat(){
+    std::ofstream statfile;
+    statfile.open ("stat.txt", std::ios::out | std::ios::app);
+   // statfile << "Time\tTot E\tKE\tPE\tT\tPress\tVirial" << std::endl;
+    statfile << time_ << "\t"
+    << kinetic_energy_ + potential_energy_ << "\t"
+    << kinetic_energy_ << "\t"
+    << potential_energy_ << "\t"
+    << temp_ << "\t"
+    << pressure_ << "\t"
+    << virial_ << "\t"
+    << std::endl;
+    statfile.close();
+}
+
 //==================================================================//
 // Integrator implementation
 //==================================================================//
@@ -73,17 +90,16 @@ void Simulation::print_pos(){
 // Constructor needs a matrix to hold the forces and a second one for accelerations
 VelocityVerletIntegrator::VelocityVerletIntegrator(Simulation& sim) : sim_(sim){
     forces.resize(sim_.nAtoms(), 3);
-    accel.resize(sim_.nAtoms(), 3);
+    nAtoms = sim_.nAtoms();
+    dim = sim_.dim();
+    rc = sim_.rc();
 }
 
 
 void VelocityVerletIntegrator::Forces(){
     // Parameters
-    int nAtoms = sim_.nAtoms();
     double eps = 1.0, sigma = 1.0;
     double dx = 0, dy = 0, dz = 0;
-    double dim = sim_.dim();
-    double rc = sim_.rc();
 
     // Zero out the forces, potential, and virial
     for (int i = 0; i < nAtoms; i++){
@@ -135,8 +151,6 @@ void VelocityVerletIntegrator::Forces(){
 
 
 void VelocityVerletIntegrator::WrapPos(){
-    int nAtoms = sim_.nAtoms();
-    double dim = sim_.dim();
     // Loop over the positions of all atoms
     for (int i = 0; i < nAtoms; i++){
         // Loop over x, y, and z directions
@@ -145,4 +159,44 @@ void VelocityVerletIntegrator::WrapPos(){
             else if (sim_.pos_(i, j) > dim) sim_.pos_(i, j) -= dim;
         }
     }
+}
+
+
+void VelocityVerletIntegrator::VelocityVerletStep(double ts){
+    double ts2 = ts*0.5;
+
+    // v(t+dt/2)
+    sim_.vel_ += (forces/sim_.mass())*ts2;
+    // r(t + dt)
+    sim_.pos_ += sim_.vel_*ts;
+
+    // Wrap positions
+    WrapPos();
+
+    // Update Forces: f(t+dt)
+    Forces();
+
+    E_kin = 0;
+    // v(t+dt)
+    sim_.vel_ += (forces/sim_.mass())*ts2;
+
+    // Calculate kinetic energy
+    for (int i = 0; i < nAtoms; i++){
+        E_kin += sim_.vel_.row(i).squaredNorm();
+    }
+    E_kin /= (0.5/nAtoms);
+
+    // Calculate pressure
+    press = sim_.dens() * (2.0*E_kin + virial)/3.0;
+
+    // Calculate temp
+    temp = (2.0/3.0)*8.6173324e-5*E_kin/nAtoms;
+}
+
+void VelocityVerletIntegrator::SetValues(){
+    sim_.setTemp(temp);
+    sim_.setPress(press);
+    sim_.setPE(E_pot);
+    sim_.setKE(E_kin);
+    sim_.setVirial(virial);
 }

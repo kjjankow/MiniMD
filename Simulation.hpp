@@ -17,37 +17,52 @@ private:
     // Constants
     const unsigned runTime_;
     const unsigned nAtoms_;
-    const double mass_ = 39.948;            // Hardcode Argon's atomic mass
-    const double kb_ = 1.380648e-23;        // Boltzmann's const in J/K
-    const double rc_ = 12.0;                // Cutoff radius in Ang
-    const double volume_ = 30.0*30.0*30.0;  // In Ang^3. Traditionally we would take the scalar triple product
-                                            // of the three dimension vectors, but we assume a cubic box here.
+    const double mass_ = 1;
+    const double kb_ = 1;
+    const double rc_ = 3.5294;
+    const double volume_ = 5.32186*5.32186*5.32186;  // In reduced len^3
 
     // Simulation box geometry
-    Eigen::RowVector3d xVec_ = {30.0,    0,    0};
-    Eigen::RowVector3d yVec_ = {0   , 30.0,    0};
-    Eigen::RowVector3d zVec_ = {0   ,    0, 30.0};
+    Eigen::RowVector3d xVec_ = {5.32186,  0,  0};
+    Eigen::RowVector3d yVec_ = {0,  5.32186,  0};
+    Eigen::RowVector3d zVec_ = {0,  0,  5.32186};
 
     // These quantities will change throughout the simulation
     double temp_;
     double pressure_;
+    double potential_energy_ = 0;
+    double kinetic_energy_ = 0;
+    double density_ = 0;
+    double virial_ = 0;
+    int time_ = 0;
 
 
 public:
     Eigen::Matrix<double, Eigen::Dynamic, 3> vel_;
     Eigen::Matrix<double, Eigen::Dynamic, 3> pos_;
-    // Constructor
-    Simulation(unsigned nAtoms, double temp, unsigned runTime);
+
 
     // Getters
     int nAtoms() {return nAtoms_;}
-    double dim() {return xVec_(1);}
+    double dim() {return xVec_(0);}
     double rc() {return rc_;}
+    double mass() {return mass_;}
+    double dens() {return density_;}
 
     // Setters
+    void setKE(double KE) {kinetic_energy_ = KE;}
+    void setPE(double PE) {potential_energy_ = PE;}
+    void setVirial(double vir) {virial_ = vir;}
+    void setPress(double p) {pressure_ = p;}
+    void setTemp(double temp) {temp_ = temp;}
+    void incTime(){time_++;}
+
+    // Constructor
+    Simulation(unsigned nAtoms, double temp, unsigned runTime);
 
     // Outputs
     void print_pos();
+    void print_stat();
 };
 
 
@@ -55,11 +70,15 @@ public:
 class VelocityVerletIntegrator {
 private:
     Eigen::Matrix<double, Eigen::Dynamic, 3> forces;
-    Eigen::Matrix<double, Eigen::Dynamic, 3> accel;
     Simulation& sim_;
     int nAtoms = 0;
+    double dim = 0;
+    double rc = 0;
     double E_pot = 0;
+    double E_kin = 0;
     double virial = 0;
+    double press = 0;
+    double temp = 0;
 
 public:
     // Constructor
@@ -81,6 +100,10 @@ public:
      * to enforce periodic boundary conditions.
      */
     void WrapPos();
+
+    void VelocityVerletStep(double ts);
+
+    void SetValues();
 
 };
 
