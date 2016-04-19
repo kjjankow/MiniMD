@@ -58,7 +58,7 @@ Simulation::Simulation(unsigned nAtoms, double temp, unsigned runTime) :
 void Simulation::print_pos(){
     long rows = pos_.rows();
     std::ofstream writefile;
-    writefile.open ("config.xyz", std::ios::out);
+    writefile.open ("config.xyz", std::ios::out | std::ios::app);
     writefile << rows << "\n#####\n";
     for (int i = 0; i < rows; i++){
         writefile << "Ar\t" << pos_(i, 0) << "\t" << pos_(i, 1) << "\t" << pos_(i, 2) << "\n";
@@ -155,8 +155,8 @@ void VelocityVerletIntegrator::WrapPos(){
     for (int i = 0; i < nAtoms; i++){
         // Loop over x, y, and z directions
         for (int j = 0; j < 3; j++) {
-            if (sim_.pos_(i, j) < dim) sim_.pos_(i, j) += dim;
-            else if (sim_.pos_(i, j) > dim) sim_.pos_(i, j) -= dim;
+            while (sim_.pos_(i, j) < dim) sim_.pos_(i, j) += dim;
+            while (sim_.pos_(i, j) > dim) sim_.pos_(i, j) -= dim;
         }
     }
 }
