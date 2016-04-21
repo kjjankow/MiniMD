@@ -58,12 +58,11 @@ Simulation::Simulation(unsigned nAtoms, double temp, unsigned runTime) :
 void Simulation::print_pos(){
     long rows = pos_.rows();
     std::ofstream writefile;
-    writefile.open ("config.xyz", std::ios::out | std::ios::app);
+    writefile.open ("configuration.xyz", std::ios::out | std::ios::app);
     writefile << rows << "\n#####\n";
     for (int i = 0; i < rows; i++){
         writefile << "Ar\t" << pos_(i, 0) << "\t" << pos_(i, 1) << "\t" << pos_(i, 2) << "\n";
     }
-    writefile << std::endl;
     writefile.close();
 }
 

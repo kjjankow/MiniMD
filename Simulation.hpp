@@ -5,7 +5,6 @@
 #define MINIMD_SIMULATION_HPP
 
 #include "eigen3/Eigen/Dense"
-#include "helper.hpp"
 
 #include <cmath>
 #include <fstream>
